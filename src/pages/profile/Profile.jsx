@@ -3,6 +3,7 @@ import useGet from '../../hooks/useGet';
 import useUpdate from '../../hooks/useUpdate';
 import useAuthStore from '../../store/useAuthStore';
 import getErrorMessage from '../../lib/Geterrormessage';
+import ImageUpload from '../../components/shared/ImageUpload';
 
 const PROFILE_URL = '/api/shipping/auth/profile';
 const PROFILE_QUERY_KEY = [PROFILE_URL];
@@ -16,7 +17,7 @@ const Profile = () => {
   const updateProfile = useUpdate(PROFILE_URL, PROFILE_QUERY_KEY);
   const [logoUrl, setLogoUrl] = useState(null);
   const profile = data?.data?.data || user;
-  const logoPreview = logoUrl ?? profile?.logo;
+  const currentLogo = logoUrl ?? profile?.logo ?? '';
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -24,7 +25,7 @@ const Profile = () => {
       fields[field] = event.currentTarget.elements[field].value;
       return fields;
     }, {});
-    payload.logo = event.currentTarget.elements.logo.value;
+    payload.logo = currentLogo;
 
     try {
       const response = await updateProfile.mutateAsync(payload);
@@ -91,36 +92,17 @@ const Profile = () => {
           </label>
         ))}
 
-        <label
-          htmlFor="profile-logo"
-          className="block space-y-2 text-sm font-medium sm:col-span-2"
-        >
-          Logo URL
-          <input
+        <div className="sm:col-span-2">
+          <ImageUpload
             id="profile-logo"
-            name="logo"
-            type="url"
-            maxLength={500}
-            value={logoUrl ?? profile.logo ?? ''}
-            onChange={(event) => setLogoUrl(event.target.value)}
-            placeholder="https://example.com/logo.png"
-            aria-describedby="profile-logo-help"
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+            label="Company Logo"
+            description="Upload your company logo. It is converted to a link automatically and displayed across the dashboard."
+            value={currentLogo}
+            onChange={(newVal) => setLogoUrl(newVal)}
+            shape="rounded"
+            size="md"
           />
-          <span id="profile-logo-help" className="block text-xs text-muted-foreground">
-            Enter a publicly accessible image URL (maximum 500 characters).
-          </span>
-        </label>
-
-        {logoPreview && (
-          <div className="sm:col-span-2">
-            <img
-              src={logoPreview}
-              alt={`${profile.name} logo preview`}
-              className="size-20 rounded-lg border object-cover"
-            />
-          </div>
-        )}
+        </div>
 
         <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:items-center">
           <button

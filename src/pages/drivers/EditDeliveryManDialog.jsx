@@ -18,6 +18,7 @@ import useGet from "../../hooks/useGet";
 import useUpdate from "../../hooks/useUpdate";
 import getErrorMessage from "../../lib/Geterrormessage";
 import QueryErrorNotice from "../../components/shared/QueryErrorNotice";
+import ImageUpload from "../../components/shared/ImageUpload";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -128,7 +129,7 @@ const EditDeliveryManForm = ({ driverId, driver, onCancel, onSuccess }) => {
     if (formData.password.trim()) {
       payload.password = formData.password.trim();
     }
-    if (formData.image.trim()) {
+    if (formData.image !== undefined) {
       payload.image = formData.image.trim();
     }
     if (formData.restaurantId) {
@@ -390,19 +391,16 @@ const EditDeliveryManForm = ({ driverId, driver, onCancel, onSuccess }) => {
         </div>
       </div>
 
-      {/* Profile Image URL */}
-      <div className="space-y-1.5">
-        <Label htmlFor="editImage" className="text-xs font-semibold">
-          Profile Image URL
-        </Label>
-        <Input
-          id="editImage"
-          type="url"
-          placeholder="https://example.com/images/ahmed.jpg"
-          value={formData.image}
-          onChange={(e) => handleChange("image", e.target.value)}
-        />
-      </div>
+      {/* Profile Image */}
+      <ImageUpload
+        id="driver-edit-image"
+        label="Profile Image"
+        description="Upload a normal image file for the delivery man. It will be converted into a link automatically."
+        value={formData.image}
+        onChange={(val) => handleChange("image", val)}
+        shape="circle"
+        size="sm"
+      />
 
       <DialogFooter className="border-t border-border/70 pt-3 flex items-center justify-end gap-2">
         <Button

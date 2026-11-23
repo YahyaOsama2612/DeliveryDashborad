@@ -13,6 +13,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Loader2, Save, Check, ChevronsUpDown } from "lucide-react";
+import ImageUpload from "./ImageUpload";
 import {
   Select,
   SelectContent,
@@ -199,13 +200,7 @@ const AddPage = ({
   }, [fields]);
 
   // ── File → base64 helper ─────────────────────────────────────────────────
-  const toBase64 = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
+  // (Handled by ImageUpload component)
 
   // ── Populate form when initialData changes (edit mode) ───────────────────
   const initialDataString = JSON.stringify(initialData);
@@ -410,35 +405,17 @@ const AddPage = ({
                         control={control}
                         rules={{ required: isEdit ? false : fieldItem.required }}
                         render={({ field: { onChange: formOnChange, value } }) => (
-                          <div className="space-y-3">
-                            <Input
-                              type="file"
-                              accept="image/*"
-                              onChange={async (e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                  const base64 = await toBase64(file);
-                                  formOnChange(base64);
-                                  fieldItem.onChange?.(base64);
-                                }
-                              }}
-                              className={
-                                errors[fieldItem.name] ? "border-destructive" : ""
-                              }
-                            />
-                            {value && (
-                              <div className="relative w-32 h-32 border rounded-lg overflow-hidden bg-gray-50">
-                                <img
-                                  src={value}
-                                  alt="Preview"
-                                  className="w-full h-full object-cover"
-                                />
-                                <div className="absolute top-0 right-0 bg-primary text-white text-[10px] px-2 py-1">
-                                  Current
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                          <ImageUpload
+                            id={`field-${fieldItem.name}`}
+                            label=""
+                            description={fieldItem.placeholder || "Upload an image. It will be converted to a link automatically."}
+                            value={value}
+                            onChange={(val) => {
+                              formOnChange(val);
+                              fieldItem.onChange?.(val);
+                            }}
+                            error={errors[fieldItem.name]?.message}
+                          />
                         )}
                       />
                     ) : /* ── Switch / Toggle ──────────────────────────────────── */
