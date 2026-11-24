@@ -209,12 +209,12 @@ export const normalizeOrder = (order) => {
   if (!order || typeof order !== 'object') return {};
 
   const id = order.id || order._id || order.orderId;
-  const orderNumber =
-    order.orderNumber ||
-    order.order_number ||
-    order.code ||
-    order.orderCode ||
-    (id ? `#${String(id).slice(-6).toUpperCase()}` : '#ORD-—');
+  const dailyOrderNumber =
+    order.dailyOrderNumber ??
+    order.daily_order_number ??
+    order.code ??
+    order.orderCode ??
+    '—';
 
   // Customer resolution
   const customer = order.customer || order.user || {};
@@ -363,7 +363,7 @@ export const normalizeOrder = (order) => {
   return {
     raw: order,
     id,
-    orderNumber,
+    dailyOrderNumber,
     status,
     customer: {
       name: customerName,

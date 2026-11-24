@@ -268,7 +268,7 @@ const Orders = () => {
     return orders.filter((order) => {
       if (term) {
         const matchesOrder =
-          String(order.orderNumber || '').toLowerCase().includes(term) ||
+          String(order.dailyOrderNumber ?? '').toLowerCase().includes(term) ||
           String(order.id || '').toLowerCase().includes(term);
         const matchesCustomer =
           (order.customer?.name || '').toLowerCase().includes(term) ||
@@ -712,11 +712,11 @@ const Orders = () => {
                       {(page - 1) * limit + idx + 1}
                     </TableCell>
 
-                    {/* Order Code & Date */}
+                    {/* Daily Order Number & Date */}
                     <TableCell>
                       <div className="flex flex-col">
                         <span className="font-bold text-xs text-foreground hover:text-primary transition-colors">
-                          {order.orderNumber}
+                          {order.dailyOrderNumber}
                         </span>
                         <span className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
                           <Clock className="size-3" />

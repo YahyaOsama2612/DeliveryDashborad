@@ -23,6 +23,10 @@ import {
   getEntityCoordinates,
   parseCoordinates,
 } from "../../lib/locationUtils";
+import {
+  extractDeliveryMen,
+  getDeliveryManId,
+} from "../../lib/deliveryManUtils";
 import CreateDeliveryManDialog from "./CreateDeliveryManDialog";
 import EditDeliveryManDialog from "./EditDeliveryManDialog";
 
@@ -74,24 +78,6 @@ class MapErrorBoundary extends Component {
     return this.props.children;
   }
 }
-
-const extractDeliveryMen = (response) => {
-  const candidate =
-    response?.data?.data ||
-    response?.data?.deliveryMen ||
-    response?.data?.delivery_men ||
-    response?.data?.drivers ||
-    (Array.isArray(response?.data) ? response.data : null) ||
-    response?.deliveryMen ||
-    response?.delivery_men ||
-    response?.drivers ||
-    (Array.isArray(response) ? response : null);
-
-  return Array.isArray(candidate) ? candidate : [];
-};
-
-const getDeliveryManId = (driver) =>
-  driver?.id || driver?._id || driver?.deliveryManId;
 
 const getActiveOrderId = (order) =>
   typeof order === "object" && order !== null
@@ -290,16 +276,18 @@ const Drivers = () => {
         const position = getEntityCoordinates(driver);
         const id = getDeliveryManId(driver);
         if (!position || !id || !isValidPosition(position)) return [];
-        const orderNumbers = activeOrders
-          .map(
-            (order) =>
-              (typeof order === "object" && order !== null
-                ? order.orderNumber || order.orderId || order.id
-                : order) || "",
+        const dailyOrderNumbers = activeOrders
+          .map((order) =>
+            typeof order === "object" && order !== null
+              ? order.dailyOrderNumber
+              : null,
           )
-          .filter(Boolean);
-        const orderDetail = orderNumbers.length
-          ? `Active orders: ${orderNumbers.join(", ")}`
+          .filter((dailyOrderNumber) =>
+            dailyOrderNumber != null && String(dailyOrderNumber).trim() !== "",
+          )
+          .map(String);
+        const orderDetail = dailyOrderNumbers.length
+          ? `Active orders: ${dailyOrderNumbers.join(", ")}`
           : `Active orders: ${activeOrderCount}`;
         return [
           {

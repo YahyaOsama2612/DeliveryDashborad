@@ -220,7 +220,7 @@ const AssignDeliveryManDialog = ({
             <div className="mt-4 rounded-xl border border-border/80 bg-background/80 p-3 shadow-2xs space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-foreground">
-                  Order {normalizedOrder.orderNumber}
+                  Order {normalizedOrder.dailyOrderNumber}
                 </span>
                 <span className="text-muted-foreground font-mono">
                   {normalizedOrder.financials?.total

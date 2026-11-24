@@ -75,7 +75,7 @@ const humanize = (value) =>
 const unwrapOrder = (payload) => {
   let current = payload;
   for (let i = 0; i < 5 && current && typeof current === "object"; i += 1) {
-    if (current.orderNumber || Array.isArray(current.items)) return current;
+    if (current.dailyOrderNumber != null || Array.isArray(current.items)) return current;
     current = current.data ?? current.order;
   }
   return current && typeof current === "object" ? current : null;
@@ -141,11 +141,14 @@ const adaptOrder = (raw) => {
   const gatewayType = raw.paymentGatewayType
     ? `${humanize(raw.paymentGatewayType).toLowerCase()} gateway`
     : "";
+  const dailyOrderNumber =
+    raw.dailyOrderNumber ??
+    raw.daily_order_number ??
+    "—";
 
   return {
     id: raw.id, // internal only
-    orderNumber: raw.orderNumber,
-    dailyOrderNumber: raw.dailyOrderNumber,
+    dailyOrderNumber,
     orderType: raw.orderType,
     orderSource: raw.orderSource,
     prepMinutes: raw.durationOrderPreparing,
@@ -499,7 +502,7 @@ const OrderDetail = () => {
           <div>
             <div className="flex items-center gap-2.5">
               <h1 className="text-xl font-bold tracking-tight text-foreground">
-                Order {order.orderNumber}
+                Order {order.dailyOrderNumber}
               </h1>
               <span
                 className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${statusInfo.bg}`}
@@ -1186,32 +1189,27 @@ const OrderDetail = () => {
             </CardHeader>
             <CardContent className="p-4 space-y-2 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Order Number:</span>
+                <span className="text-muted-foreground">Daily Order #:</span>
                 <div className="flex items-center gap-1 font-mono text-[11px]">
-                  <span className="text-foreground">{order.orderNumber}</span>
+                  <span className="text-foreground">{order.dailyOrderNumber}</span>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
                     onClick={() =>
-                      copyToClipboard(order.orderNumber, "Order number copied!")
+                      copyToClipboard(
+                        String(order.dailyOrderNumber),
+                        "Daily order number copied!",
+                      )
                     }
+                    disabled={order.dailyOrderNumber === "—"}
                     className="size-6 text-muted-foreground hover:text-foreground"
-                    title="Copy order number"
+                    title="Copy daily order number"
                   >
                     <Copy className="size-3" />
                   </Button>
                 </div>
               </div>
-
-              {order.dailyOrderNumber != null && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Daily Order #:</span>
-                  <span className="font-mono text-[11px] text-foreground">
-                    {order.dailyOrderNumber}
-                  </span>
-                </div>
-              )}
 
               {order.orderType && (
                 <div className="flex items-center justify-between">

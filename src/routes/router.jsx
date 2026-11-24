@@ -12,6 +12,7 @@ import Zones from '../pages/zones/Zones';
 import Restaurants from '../pages/restaurants/Restaurants';
 import Users from '../pages/users/Users';
 import Profile from '../pages/profile/Profile';
+import Reports from '../pages/reports/Reports';
 import NotFound from '../pages/NotFound';
 import RouteErrorFallback from '../components/shared/RouteErrorFallback';
 
@@ -39,6 +40,7 @@ const router = createBrowserRouter([
           { path: '/zones', element: <Zones /> },
           { path: '/restaurants', element: <Restaurants /> },
           { path: '/users', element: <Users /> },
+          { path: '/reports', element: <Reports /> },
           { path: '/profile', element: <Profile /> },
         ],
       },

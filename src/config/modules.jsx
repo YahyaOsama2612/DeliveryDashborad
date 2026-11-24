@@ -1,4 +1,4 @@
-import { MapPinned, Package, Store, Truck, Users } from 'lucide-react';
+import { BarChart3, MapPinned, Package, Store, Truck, Users } from 'lucide-react';
 
 export const navigationItems = [
   {
@@ -30,5 +30,11 @@ export const navigationItems = [
     description: 'Manage admins, dispatchers & viewers',
     url: '/users',
     icon: Users,
+  },
+  {
+    title: 'Reports',
+    description: 'Review delivery summaries and courier performance',
+    url: '/reports',
+    icon: BarChart3,
   },
 ];
