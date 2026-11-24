@@ -1,13 +1,35 @@
 import { useState } from 'react';
+import {
+  BadgeCheck,
+  Building2,
+  Check,
+  LoaderCircle,
+  Mail,
+  MapPin,
+  Phone,
+  Percent,
+  Save,
+  Search,
+  ShieldCheck,
+  UserRound,
+} from 'lucide-react';
 import useGet from '../../hooks/useGet';
 import useUpdate from '../../hooks/useUpdate';
 import useAuthStore from '../../store/useAuthStore';
 import getErrorMessage from '../../lib/Geterrormessage';
 import ImageUpload from '../../components/shared/ImageUpload';
+import { normalizeImageDataUrl } from '../../lib/imageUtils';
 
 const PROFILE_URL = '/api/shipping/auth/profile';
 const PROFILE_QUERY_KEY = [PROFILE_URL];
 const profileFields = ['name', 'nameAr', 'phone', 'email', 'address'];
+const fieldDetails = {
+  name: { label: 'Company name', icon: Building2 },
+  nameAr: { label: 'Arabic name', icon: Building2 },
+  phone: { label: 'Phone number', icon: Phone },
+  email: { label: 'Email address', icon: Mail },
+  address: { label: 'Business address', icon: MapPin },
+};
 
 const Profile = () => {
   const token = useAuthStore((state) => state.token);
@@ -18,6 +40,16 @@ const Profile = () => {
   const [logoUrl, setLogoUrl] = useState(null);
   const profile = data?.data?.data || user;
   const currentLogo = logoUrl ?? profile?.logo ?? '';
+  const accountDetails = [
+    { label: 'Account status', value: profile?.status || '—', icon: ShieldCheck },
+    { label: 'Maximum active orders', value: profile?.maxActiveOrders ?? '—', icon: BadgeCheck },
+    { label: 'Maximum search radius', value: profile?.maxSearchRadius ?? '—', icon: Search },
+    {
+      label: 'Commission',
+      value: [profile?.commissionValue, profile?.commissionType].filter(Boolean).join(' ') || '—',
+      icon: Percent,
+    },
+  ];
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -25,78 +57,132 @@ const Profile = () => {
       fields[field] = event.currentTarget.elements[field].value;
       return fields;
     }, {});
-    payload.logo = currentLogo;
+    payload.logo = normalizeImageDataUrl(currentLogo);
 
     try {
       const response = await updateProfile.mutateAsync(payload);
       const updatedProfile = response?.data?.data;
+      const savedProfile = updatedProfile?.id
+        ? updatedProfile
+        : { ...profile, ...payload };
       setUser(
-        updatedProfile?.id ? updatedProfile : { ...profile, ...payload },
+        savedProfile,
         token
       );
+      if (typeof savedProfile.logo === 'string') {
+        setLogoUrl(savedProfile.logo);
+      }
     } catch {
       // The mutation error is rendered below.
     }
   };
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground">Loading profile…</p>;
+    return (
+      <div className="profile-state">
+        <LoaderCircle className="size-5 animate-spin text-primary" />
+        <span>Loading your company profile…</span>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <p role="alert" className="text-sm text-destructive">
-        Could not load your profile: {getErrorMessage(error)}
-      </p>
+      <div role="alert" className="profile-state profile-state-error">
+        <ShieldCheck className="size-5" />
+        <span>Could not load your profile: {getErrorMessage(error)}</span>
+      </div>
     );
   }
 
   if (!profile) {
     return (
-      <p role="alert" className="text-sm text-destructive">
-        The profile response did not contain profile details.
-      </p>
+      <div role="alert" className="profile-state profile-state-error">
+        <ShieldCheck className="size-5" />
+        <span>The profile response did not contain profile details.</span>
+      </div>
     );
   }
 
   return (
-    <section className="max-w-3xl space-y-6">
-      <div>
-        <h2 className="m-0 text-xl font-semibold tracking-tight">Company profile</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          View and update your shipping company account details.
-        </p>
+    <section className="profile-page mx-auto max-w-6xl">
+      <div className="profile-page-heading">
+        <div className="profile-eyebrow"><Building2 size={14} /> ACCOUNT SETTINGS</div>
+        <h1>Company profile</h1>
+        <p>Manage your business details and account preferences.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid gap-5 sm:grid-cols-2">
-        {profileFields.map((field) => (
-          <label
-            key={field}
-            htmlFor={`profile-${field}`}
-            className={`block space-y-2 text-sm font-medium ${
-              field === 'address' ? 'sm:col-span-2' : ''
-            }`}
-          >
-            {field === 'nameAr'
-              ? 'Arabic name'
-              : field.charAt(0).toUpperCase() + field.slice(1)}
-            <input
-              id={`profile-${field}`}
-              name={field}
-              type={field === 'email' ? 'email' : 'text'}
-              required={field === 'name' || field === 'phone' || field === 'email'}
-              defaultValue={profile[field] ?? ''}
-              dir={field === 'nameAr' || field === 'address' ? 'auto' : undefined}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-normal outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </label>
-        ))}
+      <div className="profile-banner">
+        <div className="profile-banner-orbit profile-banner-orbit-one" />
+        <div className="profile-banner-orbit profile-banner-orbit-two" />
+        <div className="profile-banner-identity">
+          <div className="profile-emblem"><Building2 size={27} strokeWidth={1.7} /></div>
+          <div className="min-w-0">
+            <span className="profile-banner-kicker">BUSINESS ACCOUNT</span>
+            <h2>{profile.name || 'Your company'}</h2>
+            {profile.nameAr && <p dir="auto">{profile.nameAr}</p>}
+            <span className="profile-account-chip">
+              <span className="profile-chip-dot" />
+              {profile.status || 'Company profile'}
+            </span>
+          </div>
+        </div>
+        <div className="profile-banner-mark" aria-hidden="true">
+          <Building2 size={100} strokeWidth={0.8} />
+        </div>
+      </div>
 
-        <div className="sm:col-span-2">
+      <dl className="profile-detail-grid">
+        {accountDetails.map(({ label, value, icon: Icon }) => (
+          <div className="profile-detail-card" key={label}>
+            <span className="profile-detail-icon"><Icon size={18} /></span>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <form onSubmit={handleSubmit} className="profile-form-card">
+        <div className="profile-form-heading">
+          <span className="profile-form-icon"><UserRound size={19} /></span>
+          <div>
+            <h2>Company details</h2>
+            <p>Keep your contact and business information up to date.</p>
+          </div>
+        </div>
+
+        <div className="profile-fields-grid">
+          {profileFields.map((field) => {
+            const { label, icon: Icon } = fieldDetails[field];
+            return (
+              <label
+                key={field}
+                htmlFor={`profile-${field}`}
+                className={`profile-field ${field === 'address' ? 'sm:col-span-2' : ''}`}
+              >
+                <span className="profile-field-label">{label}</span>
+                <span className="profile-input-wrap">
+                  <Icon className="profile-input-icon" size={16} aria-hidden="true" />
+                  <input
+                    id={`profile-${field}`}
+                    name={field}
+                    type={field === 'email' ? 'email' : 'text'}
+                    required={field === 'name' || field === 'phone' || field === 'email'}
+                    defaultValue={profile[field] ?? ''}
+                    dir={field === 'nameAr' || field === 'address' ? 'auto' : undefined}
+                    className="profile-input"
+                  />
+                </span>
+              </label>
+            );
+          })}
+        </div>
+
+        <div className="profile-logo-section">
           <ImageUpload
             id="profile-logo"
-            label="Company Logo"
-            description="Upload your company logo. It is converted to a link automatically and displayed across the dashboard."
+            label="Company logo"
+            description="Choose a logo, then save changes to upload it and use the hosted URL returned by the server."
             value={currentLogo}
             onChange={(newVal) => setLogoUrl(newVal)}
             shape="rounded"
@@ -104,47 +190,31 @@ const Profile = () => {
           />
         </div>
 
-        <div className="flex flex-col gap-3 sm:col-span-2 sm:flex-row sm:items-center">
+        <div className="profile-form-footer">
+          <div aria-live="polite">
+            {updateProfile.isSuccess && (
+              <p role="status" className="profile-save-success">
+                <Check size={16} /> Profile updated successfully.
+              </p>
+            )}
+            {updateProfile.isError && (
+              <p role="alert" className="profile-save-error">
+                Could not update your profile: {getErrorMessage(updateProfile.error)}
+              </p>
+            )}
+          </div>
           <button
             type="submit"
             disabled={updateProfile.isPending}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:brightness-95 disabled:pointer-events-none disabled:opacity-60"
+            className="profile-save-button"
           >
-            {updateProfile.isPending ? 'Saving…' : 'Save changes'}
+            {updateProfile.isPending
+              ? <LoaderCircle size={16} className="animate-spin" />
+              : <Save size={16} />}
+            {updateProfile.isPending ? 'Saving changes…' : 'Save changes'}
           </button>
-          {updateProfile.isSuccess && (
-            <p role="status" className="text-sm text-green-700">
-              Profile updated successfully.
-            </p>
-          )}
-          {updateProfile.isError && (
-            <p role="alert" className="text-sm text-destructive">
-              Could not update your profile: {getErrorMessage(updateProfile.error)}
-            </p>
-          )}
         </div>
       </form>
-
-      <dl className="grid gap-4 mb-4 rounded-lg border bg-card p-4 text-sm sm:grid-cols-2">
-        <div>
-          <dt className="text-muted-foreground">Status</dt>
-          <dd className="mt-1 font-medium">{profile.status || '—'}</dd>
-        </div>
-        <div>
-          <dt className="text-muted-foreground">Maximum active orders</dt>
-          <dd className="mt-1 font-medium">{profile.maxActiveOrders ?? '—'}</dd>
-        </div>
-        <div>
-          <dt className="text-muted-foreground">Maximum search radius</dt>
-          <dd className="mt-1 font-medium">{profile.maxSearchRadius ?? '—'}</dd>
-        </div>
-        <div>
-          <dt className="text-muted-foreground">Commission</dt>
-          <dd className="mt-1 font-medium">
-            {profile.commissionValue ?? '—'} ({profile.commissionType || '—'})
-          </dd>
-        </div>
-      </dl>
     </section>
   );
 };

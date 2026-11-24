@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Upload,
   X,
@@ -8,12 +8,40 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { fileToDataUrl, isValidImageUrl } from '../../lib/imageUtils';
+import {
+  fileToDataUrl,
+  isValidImageUrl,
+  normalizeImageDataUrl,
+} from '../../lib/imageUtils';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
+const imageDataUrlToBlob = (value) => {
+  const dataUrl = value.trim();
+  const commaIndex = dataUrl.indexOf(',');
+  const metadata = dataUrl.slice(0, commaIndex);
+  const mimeType = metadata.match(/^data:(image\/[^;]+)/i)?.[1];
+  const encoded = dataUrl.slice(commaIndex + 1).replace(/\s/g, '');
+
+  if (commaIndex < 0 || !mimeType || !/;base64/i.test(metadata)) {
+    throw new Error('Invalid base64 image data URL.');
+  }
+  if (encoded.length % 4 === 1) {
+    throw new Error('Invalid base64 image data.');
+  }
+
+  const padded = encoded.padEnd(Math.ceil(encoded.length / 4) * 4, '=');
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return new Blob([bytes], { type: mimeType });
+};
 
 /**
  * Modern, accessible ImageUpload component.
@@ -39,9 +67,48 @@ const ImageUpload = ({
   const [internalError, setInternalError] = useState('');
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [urlDraft, setUrlDraft] = useState('');
+  const [dataPreview, setDataPreview] = useState({ value: '', url: '' });
 
   const displayError = error || internalError;
   const hasValue = Boolean(value && typeof value === 'string' && value.trim() !== '');
+  const normalizedValue = normalizeImageDataUrl(value);
+  const isDataUrl =
+    hasValue && normalizedValue.toLowerCase().startsWith('data:image/');
+  const previewUrl = isDataUrl
+    ? dataPreview.value === normalizedValue
+      ? dataPreview.url
+      : ''
+    : normalizedValue;
+
+  useEffect(() => {
+    if (!isDataUrl) return undefined;
+
+    let active = true;
+    let objectUrl;
+
+    Promise.resolve()
+      .then(() => imageDataUrlToBlob(normalizedValue))
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        if (active) {
+          setDataPreview({ value: normalizedValue, url: objectUrl });
+        } else {
+          URL.revokeObjectURL(objectUrl);
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          const reason =
+            error instanceof Error ? error.message : 'unknown decoding error';
+          setInternalError(`Could not decode image data: ${reason}`);
+        }
+      });
+
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [isDataUrl, normalizedValue]);
 
   // Shape and preview sizing styles
   const previewSizeClasses = {
@@ -159,7 +226,7 @@ const ImageUpload = ({
             type="button"
             onClick={() => {
               setShowUrlInput(!showUrlInput);
-              setUrlDraft(hasValue ? value : '');
+              setUrlDraft(hasValue ? normalizedValue : '');
             }}
             className="text-[11px] font-medium text-muted-foreground hover:text-primary transition flex items-center gap-1"
           >
@@ -212,16 +279,18 @@ const ImageUpload = ({
           <div
             className={`relative shrink-0 overflow-hidden border border-border bg-muted/40 shadow-xs ${previewSizeClasses} ${shapeClasses}`}
           >
-            <img
-              src={value}
-              alt="Uploaded preview"
-              className="size-full object-cover transition"
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = '';
-                setInternalError('Could not render image preview. The link may be broken.');
-              }}
-            />
+            {previewUrl && (
+              <img
+                src={previewUrl}
+                alt="Uploaded preview"
+                className="size-full object-cover transition"
+                onError={() => {
+                  setInternalError(
+                    'Could not render the decoded image. The API may be returning incomplete or invalid image data.'
+                  );
+                }}
+              />
+            )}
             {isProcessing && (
               <div className="absolute inset-0 bg-background/80 flex items-center justify-center backdrop-blur-xs">
                 <RefreshCw className="size-5 animate-spin text-primary" />
@@ -236,7 +305,9 @@ const ImageUpload = ({
                 Image Attached
               </span>
               <span className="text-[11px] text-muted-foreground truncate max-w-[200px]">
-                {value.startsWith('data:') ? 'Converted to Data URL link' : 'External link'}
+                {normalizedValue.startsWith('data:')
+                  ? 'Base64 image data'
+                  : 'External link'}
               </span>
             </div>
 

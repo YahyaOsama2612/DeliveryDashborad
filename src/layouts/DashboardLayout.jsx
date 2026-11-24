@@ -37,7 +37,6 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const setLogout = useAuthStore((state) => state.setLogout);
-  const showSidebar = pathname !== '/';
   const currentPage =
     pageTitles.find(
       ({ path }) =>
@@ -61,13 +60,13 @@ const DashboardLayout = () => {
 
   return (
     <SidebarProvider>
-      {showSidebar && <AppSidebar />}
+      <AppSidebar />
       {/* h-svh + min-w-0: fixes the page height/width so only the content area scrolls */}
       <SidebarInset className="h-svh min-w-0 overflow-hidden">
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
-          <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-3 border-b bg-background/95 px-4 backdrop-blur sm:px-6">
+          <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/70 bg-background/90 px-4 shadow-[0_1px_8px_rgba(28,25,23,0.03)] backdrop-blur-xl sm:px-6">
             <div className="flex min-w-0 flex-1 items-center gap-2">
-              {showSidebar && <SidebarTrigger className="shrink-0" />}
+              <SidebarTrigger className="shrink-0" />
               {pathname !== '/' && (
                 <>
                   <button
@@ -105,7 +104,7 @@ const DashboardLayout = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger
-                className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
+                className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-background text-muted-foreground transition-all hover:border-primary/60 hover:bg-accent hover:text-primary"
                 aria-label="Open profile menu"
               >
                 {user?.logo ? (

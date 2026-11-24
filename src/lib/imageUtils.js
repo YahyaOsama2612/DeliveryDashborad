@@ -88,6 +88,41 @@ export const fileToDataUrl = (file, options = {}) => {
 };
 
 /**
+ * Normalizes an image data URL or bare base64 image payload.
+ * @param {string} value
+ * @returns {string}
+ */
+export const normalizeImageDataUrl = (value) => {
+  if (typeof value !== 'string') return '';
+
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  if (trimmed.toLowerCase().startsWith('data:image/')) {
+    const commaIndex = trimmed.indexOf(',');
+    if (commaIndex < 0) return trimmed;
+    const metadata = trimmed.slice(0, commaIndex);
+    if (!/;base64/i.test(metadata)) return trimmed;
+    return `${metadata},${trimmed.slice(commaIndex + 1).replace(/\s/g, '')}`;
+  }
+
+  const base64 = trimmed.replace(/\s/g, '');
+  const imageTypes = [
+    { prefix: '/9j/', mimeType: 'image/jpeg' },
+    { prefix: 'iVBORw0KGgo', mimeType: 'image/png' },
+    { prefix: 'R0lGOD', mimeType: 'image/gif' },
+    { prefix: 'UklGR', mimeType: 'image/webp' },
+    { prefix: 'PHN2Zy', mimeType: 'image/svg+xml' },
+    { prefix: 'PD94bWwg', mimeType: 'image/svg+xml' },
+  ];
+  const imageType = imageTypes.find(({ prefix }) => base64.startsWith(prefix));
+
+  return imageType
+    ? `data:${imageType.mimeType};base64,${base64}`
+    : trimmed;
+};
+
+/**
  * Checks if a string is a valid Data URL or external HTTP/HTTPS URL.
  * @param {string} str
  * @returns {boolean}
@@ -98,6 +133,7 @@ export const isValidImageUrl = (str) => {
   if (!trimmed) return false;
   return (
     trimmed.startsWith('data:image/') ||
+    normalizeImageDataUrl(trimmed).startsWith('data:image/') ||
     trimmed.startsWith('http://') ||
     trimmed.startsWith('https://') ||
     trimmed.startsWith('/') ||
